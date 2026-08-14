@@ -146,6 +146,41 @@ export const compositions = sqliteTable("compositions", {
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 });
 
+// Bailu's signed service edge keeps only transport idempotency and remote execution
+// recovery facts. It deliberately does not copy organization/workspace/campaign/product,
+// workflow, Artifact, or review authorities from the main platform.
+export const bailuServiceRequests = sqliteTable("bailu_service_requests", {
+  idempotencyKey: text("idempotency_key").primaryKey(),
+  requestKind: text("request_kind", { enum: ["create_project", "compose"] }).notNull(),
+  requestSha256: text("request_sha256").notNull(),
+  externalProjectId: text("external_project_id"),
+  studioRunId: text("studio_run_id").unique(),
+  externalTaskId: text("external_task_id").unique(),
+  compositionId: text("composition_id").unique(),
+  state: text("state", { enum: ["submitted", "running", "succeeded", "failed", "remote_state_unknown"] }).notNull(),
+  terminalPayload: text("terminal_payload", { mode: "json" }).$type<Record<string, unknown>>(),
+  terminalPayloadSha256: text("terminal_payload_sha256"),
+  callbackIdempotencyKey: text("callback_idempotency_key"),
+  callbackNonce: text("callback_nonce"),
+  callbackStatus: text("callback_status", { enum: ["pending", "delivered", "failed", "not_configured"] })
+    .notNull()
+    .default("pending"),
+  callbackAttempts: integer("callback_attempts").notNull().default(0),
+  callbackLastErrorCode: text("callback_last_error_code"),
+  callbackDeliveredAt: integer("callback_delivered_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+// Authentication nonces are persisted so a signed request cannot be replayed after
+// a process restart. The table is transport security state, not a user/session store.
+export const bailuServiceNonces = sqliteTable("bailu_service_nonces", {
+  nonce: text("nonce").primaryKey(),
+  keyId: text("key_id").notNull(),
+  requestTimestamp: integer("request_timestamp").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
 // Products table — product information reused across projects
 export const products = sqliteTable("products", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),

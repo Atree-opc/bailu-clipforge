@@ -111,3 +111,9 @@ export const db = realDb ?? makeFailedDbProxy();
 export function getDb() {
   return db;
 }
+
+/** Internal integrations may share ClipForge's one SQLite connection; never expose it over HTTP. */
+export function getSqlite(): Database.Database {
+  if (!sqlite) throw new Error("ClipForge database unavailable");
+  return sqlite;
+}

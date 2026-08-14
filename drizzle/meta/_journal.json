@@ -85,6 +85,13 @@
       "when": 1786078335796,
       "tag": "0011_add_ad_template_recipes",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1786748836478,
+      "tag": "0012_add_bailu_service_ledger",
+      "breakpoints": true
     }
   ]
 }

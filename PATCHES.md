@@ -9,9 +9,14 @@ upstream conflict risk.
 | Baseline commit (this branch) | Governance only | `UPSTREAM.md`, `BRANDING.md`, `PATCHES.md`, `SMOKE.md`, `LICENSES/README.md` | None | `SMOKE.md` plus repository/remote checks | Low |
 | PGE-007B white-label commit | Windows path baseline + presentation shell | `src/lib/{paths.ts,providers/stock-types.ts}`, focused tests, `src/components/app-shell.tsx`, `src/app/{layout.tsx,globals.css,start/page.tsx,settings/page.tsx}` and brand assets/i18n | None; ClipForge SQLite and main-platform authorities unchanged | 92 files / 1017 tests; lint 0 errors; Next build/TypeScript/45 pages; bilingual dark + light token browser probes | Medium (shell/start CSS and metadata assets) |
 | PGE-007B-FIX repair commit | Packaged identity, export/error branding, preference compatibility, Windows local-media regression | `package.json`, `electron/{main.js,icon.png}`, icon generator, ad-template/export seams, compliance/style metadata, storage migration, stock-location helper and tests | None; stable appId, wire formats, database and Bridge unchanged | 93 files / 1028 tests; lint 0 errors; Next build/TypeScript/45 pages; precise user/export scan; 512×512 generated icon | Low (presentation strings and compatibility helpers) |
+| PGE-007C2 service API commit | Signed Bailu project/compose/status edge and terminal recovery | `src/integrations/bailu/*`, `src/app/api/bailu/v1/*`, minimal compose lifecycle hooks, `src/lib/db/{index,schema}.ts`, Drizzle `0012` and meta | ClipForge remains project/draft/composition authority; the ledger stores transport idempotency, external task binding and callback delivery only. Main Campaign/workflow/Artifact/review facts are not copied. Contract source SHA-256 `4f27f79e847009411e322420c0f285ae453f925bb22e7db3177c30584ed211d7`. | focused 4 files / 28 tests; full 97 files / 1056 tests; lint/build/migration/leak scans in `SMOKE.md` | Medium (one narrow hook seam in the upstream compose route; no FFmpeg/TTS rewrite) |
 
 No business route, database schema, composition, provider, or integration patch
 is included in PGE-007B.
+
+PGE-007C2 adds the first business integration patch after the white-label work.
+Its exact wire, signing, fixed callback, output-manifest and restart rules are
+documented beside the implementation in `src/integrations/bailu/README.md`.
 
 ## Rules for future entries
 

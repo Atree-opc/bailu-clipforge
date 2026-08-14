@@ -20,6 +20,7 @@ import { fetchFreeBgm, moodQueryForCategory, moodQueryForMood } from "@/lib/free
 import type { Shot, ScriptCharacter } from "@/lib/db/schema";
 import { assignCharacterVoices } from "@/lib/character-voices";
 import { desc, and } from "drizzle-orm";
+import type { CompositionLifecycleHooks } from "@/integrations/bailu/compose-adapter";
 
 // 获取该项目最新一条合成记录（导出页读取真实成片）
 export async function GET(
@@ -92,12 +93,12 @@ function defaultMotion(shot: Shot): string {
 }
 
 // 合成视频：读取已选脚本分镜 + 已生成素材，用 FFmpeg 合成带运镜与中文字幕的成片
-export async function POST(
+export async function startProjectComposition(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  id: string,
+  hooks?: CompositionLifecycleHooks,
 ) {
   try {
-    const { id } = await params;
     const body = await req.json().catch(() => ({}));
     const db = getDb();
 
@@ -260,6 +261,15 @@ export async function POST(
       .values({ projectId: id, resolution: outputCfg.resolution, aspectRatio: outputCfg.aspectRatio, aigcBadge, ...(label && { label }), status: "composing" })
       .returning();
     await db.update(projects).set({ status: "composing", updatedAt: new Date() }).where(eq(projects.id, id));
+    if (hooks) {
+      try {
+        await hooks.onCreated(comp.id);
+      } catch {
+        await db.update(compositions).set({ status: "failed" }).where(eq(compositions.id, comp.id)).catch(() => {});
+        await db.update(projects).set({ status: "video", updatedAt: new Date() }).where(eq(projects.id, id)).catch(() => {});
+        throw new Error("Bailu composition binding failed");
+      }
+    }
 
     // 后台异步合成（不阻塞请求，避免长视频超时）
     void (async () => {
@@ -457,10 +467,20 @@ export async function POST(
         // 完成：更新合成记录与项目状态
         await db.update(compositions).set({ outputPath, status: "done" }).where(eq(compositions.id, comp.id));
         await db.update(projects).set({ status: "done", updatedAt: new Date() }).where(eq(projects.id, id));
+        if (hooks) {
+          await hooks.onTerminal(comp.id, "done", outputPath).catch(() => {
+            console.warn("[bailu] composition terminal hook failed");
+          });
+        }
       } catch (e) {
         console.error("后台合成失败:", e);
         await db.update(compositions).set({ status: "failed" }).where(eq(compositions.id, comp.id)).catch(() => {});
         await db.update(projects).set({ status: "video", updatedAt: new Date() }).where(eq(projects.id, id)).catch(() => {});
+        if (hooks) {
+          await hooks.onTerminal(comp.id, "failed").catch(() => {
+            console.warn("[bailu] composition terminal hook failed");
+          });
+        }
       }
     })();
 
@@ -473,4 +493,14 @@ export async function POST(
       { status: 500 }
     );
   }
+}
+
+// Public/UI behavior stays byte-for-byte at the boundary: the dynamic Route Handler
+// only resolves Next 16's promised params and delegates to the existing compose path.
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  return startProjectComposition(req, id);
 }

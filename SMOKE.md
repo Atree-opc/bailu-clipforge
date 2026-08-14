@@ -103,3 +103,27 @@ The local-media regression now verifies real byte-for-byte copying from a
 Windows temporary file and file URL, classifies UNC paths as local, and keeps
 HTTPS on a mocked network branch. The preference migration is table-tested for
 all four keys, including new-value precedence, idempotence, and write failure.
+
+## PGE-007C2 signed internal service API
+
+The Bailu service edge reuses the existing project row and compose chain. It
+does not expose a second workflow, Artifact or business-scope store.
+
+| Command | Exit | Result |
+|---|---:|---|
+| `pnpm exec vitest run src/integrations/bailu/__tests__` | 0 | 4 files / 28 tests: raw-body HMAC, strict wire parser, nonce/idempotency, real SQLite 0011→0012 and restart, manifest, callback failure recovery, route vertical slice |
+| `pnpm test` | 0 | 97/97 files; 1056/1056 tests |
+| `pnpm lint` | 0 | 0 errors; 21 unchanged upstream warnings; no warning in changed TypeScript |
+| focused eslint over Bailu, compose hook and DB seams | 0 | 0 errors and 0 warnings in changed TypeScript |
+| `pnpm build` | 0 | Next.js/TypeScript passed; 45 static pages and three Bailu dynamic API routes; only the existing ingest NFT trace warning |
+| `git diff --cached --check` | 0 | no whitespace errors across tracked and newly added files |
+
+Migration verification applies the committed 0000–0011 journal to a real
+SQLite database, upgrades it with 0012, and reruns migration after reopening.
+It also applies all migrations twice to an empty database and scans 0012 for
+destructive SQL. The request ledger is asserted not to contain organization,
+workspace, Campaign, product, workflow or Artifact authority columns.
+
+Signing and runtime configuration are specified in
+`src/integrations/bailu/README.md`. Secrets are environment-only and are never
+included in request/response bodies, SQLite rows or logs.
