@@ -2,6 +2,8 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { describe, expect, it } from "vitest";
 import { messages } from "@/lib/i18n/messages";
+import { BUILTIN_STYLE_PACKS } from "@/lib/style-packs";
+import { buildAigcMetadataFields } from "@/lib/compliance-metadata";
 
 const root = process.cwd();
 const read = (relativePath: string) => readFileSync(join(root, relativePath), "utf8");
@@ -44,6 +46,39 @@ describe("电商视频工坊白标壳", () => {
     expect(messages.en.settings.licenseAttribution).toContain("ClipForge");
     expect(read("src/app/settings/page.tsx")).toContain("licenseAttribution");
     expect(read("src/app/settings/page.tsx")).toContain("https://github.com/xixihhhh/clipforge");
+  });
+
+  it("Electron 包名、用户错误与导出元数据使用产品品牌", () => {
+    const pkg = JSON.parse(read("package.json")) as {
+      build: { appId: string; productName: string; mac: { icon: string }; win: { icon: string }; linux: { icon: string } };
+    };
+    expect(pkg.build.productName).toBe("电商视频工坊");
+    expect(pkg.build.appId).toBe("com.clipforge.app");
+    expect([pkg.build.mac.icon, pkg.build.win.icon, pkg.build.linux.icon]).toEqual([
+      "electron/icon.png",
+      "electron/icon.png",
+      "electron/icon.png",
+    ]);
+    const generator = read("scripts/generate-electron-icon.ps1");
+    expect(generator).toContain("src\\app\\icon.svg");
+    expect(generator).toContain("electron\\icon.png");
+    const electronIcon = readFileSync(join(root, "electron/icon.png"));
+    expect(electronIcon.subarray(1, 4).toString("ascii")).toBe("PNG");
+    expect(electronIcon.readUInt32BE(16)).toBe(512);
+    expect(electronIcon.readUInt32BE(20)).toBe(512);
+
+    // The API file contains rendered error strings and no compatibility identifier;
+    // exported pack/metadata values are asserted structurally below so source comments
+    // and the stable clipforge-style-pack@1 wire format are not mistaken for UI copy.
+    expect(read("src/app/api/ad-template/mine/route.ts")).not.toMatch(forbiddenBrand);
+    expect(BUILTIN_STYLE_PACKS.every((pack) => pack.author === "电商视频工坊")).toBe(true);
+    expect(buildAigcMetadataFields({ contentId: "brand-check" }).flat().join(" ")).toContain("电商视频工坊");
+    const electronShell = read("electron/main.js");
+    expect(electronShell).not.toMatch(forbiddenBrand);
+    expect(electronShell).toContain('title: "电商视频工坊"');
+    for (const exportPage of ["src/app/project/new/page.tsx", "src/app/project/[id]/video/page.tsx"]) {
+      expect(read(exportPage), exportPage).not.toMatch(/a\.download\s*=\s*[`"]clipforge/i);
+    }
   });
 
   it("浅色和深色 token 均采用白鹿生产控制台色板", () => {

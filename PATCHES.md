@@ -8,6 +8,7 @@ upstream conflict risk.
 |---|---|---|---|---|---|
 | Baseline commit (this branch) | Governance only | `UPSTREAM.md`, `BRANDING.md`, `PATCHES.md`, `SMOKE.md`, `LICENSES/README.md` | None | `SMOKE.md` plus repository/remote checks | Low |
 | PGE-007B white-label commit | Windows path baseline + presentation shell | `src/lib/{paths.ts,providers/stock-types.ts}`, focused tests, `src/components/app-shell.tsx`, `src/app/{layout.tsx,globals.css,start/page.tsx,settings/page.tsx}` and brand assets/i18n | None; ClipForge SQLite and main-platform authorities unchanged | 92 files / 1017 tests; lint 0 errors; Next build/TypeScript/45 pages; bilingual dark + light token browser probes | Medium (shell/start CSS and metadata assets) |
+| PGE-007B-FIX repair commit | Packaged identity, export/error branding, preference compatibility, Windows local-media regression | `package.json`, `electron/{main.js,icon.png}`, icon generator, ad-template/export seams, compliance/style metadata, storage migration, stock-location helper and tests | None; stable appId, wire formats, database and Bridge unchanged | 93 files / 1028 tests; lint 0 errors; Next build/TypeScript/45 pages; precise user/export scan; 512×512 generated icon | Low (presentation strings and compatibility helpers) |
 
 No business route, database schema, composition, provider, or integration patch
 is included in PGE-007B.

@@ -214,6 +214,13 @@ export function inferExtension(url: string, contentType?: string | null, mediaTy
   return "mp4";
 }
 
+/** True for a native absolute path (including Windows UNC) or a file URL. */
+export function isLocalStockLocation(url: string): boolean {
+  // Static imports are intentionally avoided in this shared module; the downloader is server-only,
+  // while these platform path rules are pure and safe to load in tests.
+  return url.startsWith("file:") || url.startsWith("/") || /^[a-zA-Z]:[\\/]/.test(url) || /^\\\\[^\\]+\\[^\\]+/.test(url);
+}
+
 // ==================== shared network functions ====================
 
 /** fetch with timeout */
@@ -244,7 +251,7 @@ export async function downloadStockFile(
   mediaType?: StockMediaType
 ): Promise<DownloadResult> {
   const { writeFile, copyFile, stat } = await import("fs/promises");
-  const { join, posix, win32 } = await import("path");
+  const { join } = await import("path");
   const { fileURLToPath } = await import("url");
 
   const safeBaseName = fileBaseName.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 80) || "file";
@@ -252,8 +259,7 @@ export async function downloadStockFile(
   // local media branch: url is an absolute local path or file:// (constructed exclusively by scanLocalMaterials via readdir from the project pool, never user input);
   // copy directly instead of using network fetch (fetch does not support file paths). Size limit is still enforced, consistent with network downloads.
   const isFileUrl = url.startsWith("file:");
-  const isAbsoluteLocalPath = posix.isAbsolute(url) || win32.isAbsolute(url);
-  if (isAbsoluteLocalPath || isFileUrl) {
+  if (isLocalStockLocation(url)) {
     const srcPath = isFileUrl ? fileURLToPath(url) : url;
     const st = await stat(srcPath);
     if (st.size > MAX_DOWNLOAD_BYTES) throw new Error(`素材体积 ${st.size} 超过上限 ${MAX_DOWNLOAD_BYTES}`);

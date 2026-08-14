@@ -17,6 +17,7 @@ import { getExampleProducts, type ExampleProduct } from "@/lib/examples";
 import { useT, useLocale } from "@/lib/i18n";
 import { ATLAS_KEYS_URL } from "@/lib/atlas-onekey";
 import { formatRelativeTime } from "@/lib/relative-time";
+import { migrateBailuStorageKeys } from "@/lib/local-storage-migration";
 import { classifyTrendTitle, pickDailyTrend, TREND_CATEGORY_IDS } from "@/lib/trends";
 import type { TrendTopic, TrendCategoryId } from "@/lib/trends";
 
@@ -102,6 +103,7 @@ export default function StartPage() {
   // first-visit guide card (dismiss persists per device; read after mount to keep SSR stable)
   const [showGuide, setShowGuide] = useState(false);
   useEffect(() => {
+    migrateBailuStorageKeys(localStorage);
     // deferred to a microtask: same pattern as the daily-persona loader (no sync setState in effect)
     let cancelled = false;
     queueMicrotask(() => {

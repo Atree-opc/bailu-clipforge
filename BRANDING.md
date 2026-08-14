@@ -7,6 +7,15 @@ terminology, logo, favicon, Apple icon, and social preview now identify the
 product as `电商视频工坊` / `Commerce Video Studio`. Changes remain
 concentrated in presentation seams so upstream upgrades stay reviewable.
 
+The packaged Electron identity uses the same canonical `src/app/icon.svg` as
+the web shell. Regenerate its tracked 512×512 PNG with
+`scripts/generate-electron-icon.ps1`; package targets continue to reference
+`electron/icon.png`, while the stable upstream `appId` remains unchanged.
+
+Four pre-white-label device preferences are migrated once from `clipforge_*`
+keys to `bailu_commerce_studio_*`. Existing new-key values always win, and a
+failed write keeps the old key available for a later retry.
+
 ## Required outcome for the later task
 
 - User-facing product name: `电商视频工坊` / `Commerce Video Studio`.

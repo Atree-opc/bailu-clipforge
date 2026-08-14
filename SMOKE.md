@@ -87,3 +87,19 @@ Real Chromium at 1440×900 verified the Chinese and English dark shell. A CDP
 probe removed `.dark`, asserted computed light tokens `#f0f7f2`, `#1a3b26`,
 and `#2d7a4b`, and captured the light render. Generated screenshots live under
 ignored `.next/` and are verification evidence, not product source.
+
+## PGE-007B-FIX post-evaluation repair
+
+| Command | Exit | Result |
+|---|---:|---|
+| focused repair tests | 0 | 5 files / 105 tests: package/export branding, four-key migration, Windows/UNC/file URL/HTTPS paths, metadata composition |
+| `pnpm test` | 0 | 93/93 files; 1028/1028 tests |
+| `pnpm lint` | 0 | 0 errors; 21 unchanged upstream warnings |
+| `pnpm build` | 0 | Next.js/TypeScript passed; 45 static pages; only the existing NFT trace warning |
+| precise user/export scan | 0 | Electron shell, ad-template errors, export filenames, built-in authors and compliance defaults contain no upstream promotion; license/provenance and stable compatibility identifiers are preserved |
+| `scripts/generate-electron-icon.ps1` | 0 | regenerated `electron/icon.png` at 512×512 from canonical `src/app/icon.svg`; SHA-256 `66E4095F60EA01F21E4755E304AC725C1EB62D52B18CD48027F69ADA85D6FF58` |
+
+The local-media regression now verifies real byte-for-byte copying from a
+Windows temporary file and file URL, classifies UNC paths as local, and keeps
+HTTPS on a mocked network branch. The preference migration is table-tested for
+all four keys, including new-value precedence, idempotence, and write failure.

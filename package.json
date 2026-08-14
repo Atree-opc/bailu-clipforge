@@ -61,7 +61,7 @@
   },
   "build": {
     "appId": "com.clipforge.app",
-    "productName": "ClipForge",
+    "productName": "电商视频工坊",
     "npmRebuild": false,
     "compression": "maximum",
     "directories": {

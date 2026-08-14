@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useT } from "@/lib/i18n";
 import { useSettingsStore } from "@/lib/stores/settings-store";
+import { migrateBailuStorageKeys } from "@/lib/local-storage-migration";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -103,6 +104,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // collapsed preference (loaded post-mount so SSR markup stays stable)
   const [collapsed, setCollapsed] = useState(false);
   useEffect(() => {
+    migrateBailuStorageKeys(localStorage);
     let cancelled = false;
     queueMicrotask(() => {
       if (cancelled) return;

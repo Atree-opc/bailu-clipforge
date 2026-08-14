@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { mkdtemp, writeFile, rm } from "fs/promises";
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from "vitest";
+import { mkdtemp, writeFile, rm, readFile } from "fs/promises";
 import { tmpdir } from "os";
-import { join, win32 } from "path";
+import { join } from "path";
+import { pathToFileURL } from "url";
 import { classifyMaterial, scoreByFilename, scanLocalMaterials } from "@/lib/providers/local-stock";
-import { downloadStockFile } from "@/lib/providers/stock-types";
+import { downloadStockFile, isLocalStockLocation } from "@/lib/providers/stock-types";
 import { searchStock } from "@/lib/providers/stock-registry";
 
 let dir: string;
@@ -17,6 +18,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await rm(dir, { recursive: true, force: true });
 });
+afterEach(() => vi.restoreAllMocks());
 
 describe("classifyMaterial", () => {
   it("识别视频/图片，其余 null（大小写不敏感）", () => {
@@ -61,21 +63,39 @@ describe("registry: searchStock('local')", () => {
 });
 
 describe("downloadStockFile 本地复制分支", () => {
-  it("绝对路径素材按复制处理，落到目标目录", async () => {
+  it("Windows 临时目录中的绝对路径素材真实复制且内容一致", async () => {
     const out = await mkdtemp(join(tmpdir(), "clipforge-out-"));
     try {
       const { filePath, bytes } = await downloadStockFile(join(dir, "kitchen_pour_over.mp4"), out, "copied_clip", "video");
       expect(filePath.endsWith("copied_clip.mp4")).toBe(true);
       expect(bytes).toBe(2); // "v1"
+      expect(await readFile(filePath, "utf8")).toBe("v1");
     } finally {
       await rm(out, { recursive: true, force: true });
     }
   });
 
-  it("跨平台识别 Windows 绝对路径，不把盘符路径交给 fetch", async () => {
-    const windowsPath = win32.join("C:\\", "media", "clip.mp4");
-    await expect(
-      downloadStockFile(windowsPath, dir, "copied_clip", "video"),
-    ).rejects.not.toThrow(/fetch failed|unknown scheme/i);
+  it("UNC、file URL 走本地分支，HTTPS 保持网络分支", () => {
+    expect(isLocalStockLocation("\\\\server\\share\\clip.mp4")).toBe(true);
+    expect(isLocalStockLocation(pathToFileURL(join(dir, "kitchen_pour_over.mp4")).href)).toBe(true);
+    expect(isLocalStockLocation("https://cdn.example.com/clip.mp4")).toBe(false);
+  });
+
+  it("file URL 真实复制，HTTPS 通过 fetch 下载", async () => {
+    const out = await mkdtemp(join(tmpdir(), "clipforge-out-"));
+    try {
+      const local = await downloadStockFile(pathToFileURL(join(dir, "kitchen_pour_over.mp4")).href, out, "from_url", "video");
+      expect(await readFile(local.filePath, "utf8")).toBe("v1");
+
+      const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("net", {
+        status: 200,
+        headers: { "content-type": "video/mp4" },
+      }));
+      const remote = await downloadStockFile("https://cdn.example.com/clip.mp4", out, "from_https", "video");
+      expect(fetchMock).toHaveBeenCalledOnce();
+      expect(await readFile(remote.filePath, "utf8")).toBe("net");
+    } finally {
+      await rm(out, { recursive: true, force: true });
+    }
   });
 });
