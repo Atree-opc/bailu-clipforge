@@ -20,9 +20,11 @@ BAILU_STUDIO_HMAC_SECRET       HMAC-SHA256 secret
 BAILU_STUDIO_CALLBACK_URL      optional fixed terminal callback URL
 ```
 
-The callback URL is environment-only. Request bodies cannot override it. Only
-HTTP(S) URLs without credentials, query or fragment are accepted. The secret
-is not written to SQLite, response bodies, browser code or logs.
+The callback URL is environment-only. Request bodies cannot override it. Its
+raw value must have no leading/trailing whitespace and no literal `?` or `#`;
+these checks happen before URL parsing so empty query/fragment forms are also
+rejected. Only HTTP(S) URLs without credentials are accepted. The secret is
+not written to SQLite, response bodies, browser code or logs.
 
 ## Signing
 
@@ -93,6 +95,11 @@ The terminal status/callback body is exact:
 Successful outputs contain only `output_id`, `role`, `relative_path`,
 `content_sha256`, `size_bytes`, and `mime_type`. `relative_path` is a POSIX path
 under `APP_DATA_DIR/output`; absolute `outputPath` values never cross the wire.
+The manifest holds one opened regular file identity through validation and
+hashing, requires link count one and a nonzero stable size, verifies the
+ISO-BMFF `ftyp` box, and streams that same held handle into the repository
+`ffprobe` to require a real positive-duration video stream with positive dimensions. Links, identity
+swaps and content/metadata drift are rejected.
 
 ## Recovery
 

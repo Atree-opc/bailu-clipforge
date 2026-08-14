@@ -2,7 +2,7 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { createHash } from "crypto";
-import { mkdtempSync, rmSync } from "fs";
+import { mkdirSync, mkdtempSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { join, resolve } from "path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -13,15 +13,18 @@ import { BailuServiceLedger } from "../ledger";
 import { handleCreateProject, handleGetRun, handleStartRun, studioRouteErrorResponse } from "../route-handler";
 import { BailuRuntimeConfigError, type BailuServiceRuntime } from "../runtime";
 import { BailuStudioService } from "../service";
+import { generateRealMp4 } from "./real-mp4";
 
 const credentials: BailuServiceCredentials = { keyId: "main-local", secret: "route-handler-test-secret" };
 const roots: string[] = [];
 
 class RouteComposeAdapter implements ComposeAdapter {
   starts = 0;
+  hooks: CompositionLifecycleHooks | null = null;
 
   async start(_projectId: string, _options: Record<string, unknown>, hooks: CompositionLifecycleHooks) {
     this.starts += 1;
+    this.hooks = hooks;
     await hooks.onCreated("composition-route-1");
     return { accepted: true, status: 202 };
   }
@@ -31,7 +34,7 @@ class RouteComposeAdapter implements ComposeAdapter {
   }
 }
 
-function setup(): { sqlite: Database.Database; runtime: BailuServiceRuntime; compose: RouteComposeAdapter } {
+function setup(): { sqlite: Database.Database; outputRoot: string; runtime: BailuServiceRuntime; compose: RouteComposeAdapter } {
   const sqlite = new Database(":memory:");
   migrate(drizzle(sqlite), { migrationsFolder: resolve(process.cwd(), "drizzle") });
   const outputRoot = mkdtempSync(join(tmpdir(), "bailu-route-output-"));
@@ -44,7 +47,7 @@ function setup(): { sqlite: Database.Database; runtime: BailuServiceRuntime; com
     callback: new BailuCallbackDelivery(ledger, { credentials }),
     outputRoot,
   });
-  return { sqlite, runtime: { credentials, service }, compose };
+  return { sqlite, outputRoot, runtime: { credentials, service }, compose };
 }
 
 function signedRequest(input: {
@@ -90,7 +93,7 @@ afterEach(() => {
 
 describe("Bailu Next route boundary", () => {
   it("runs signed create/run/status and keeps replay idempotent", async () => {
-    const { sqlite, runtime, compose } = setup();
+    const { sqlite, outputRoot, runtime, compose } = setup();
     const createBody = {
       contract_version: "bailu.studio/1.0",
       studio_project_binding_id: "binding-route-1",
@@ -153,6 +156,26 @@ describe("Bailu Next route boundary", () => {
       runtime,
     );
     expect(await status.json()).toMatchObject({ state: "running", outputs: [] });
+    const projectOutput = join(outputRoot, created.external_project_id);
+    mkdirSync(projectOutput);
+    const realMp4 = join(projectOutput, "final.mp4");
+    generateRealMp4(realMp4);
+    await compose.hooks?.onTerminal("composition-route-1", "done", realMp4);
+    const terminal = await handleGetRun(
+      signedRequest({
+        pathname: statusPath,
+        method: "GET",
+        idempotencyKey: "status-route-2",
+        nonce: "QUJDREVGR0hJSktMTU5PUA",
+      }),
+      accepted.external_task_id,
+      runtime,
+    );
+    expect(await terminal.json()).toMatchObject({
+      state: "succeeded",
+      outputs: [{ relative_path: expect.stringMatching(/^[^\\:]+\/final\.mp4$/u), mime_type: "video/mp4" }],
+      error_code: null,
+    });
     expect(compose.starts).toBe(1);
     sqlite.close();
   });

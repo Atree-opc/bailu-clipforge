@@ -127,3 +127,29 @@ workspace, Campaign, product, workflow or Artifact authority columns.
 Signing and runtime configuration are specified in
 `src/integrations/bailu/README.md`. Secrets are environment-only and are never
 included in request/response bodies, SQLite rows or logs.
+
+## PGE-007C2-FIX evaluator repair
+
+The repair keeps the existing compose hook and service wire unchanged. Tests
+generate a real 32x24 H.264 MP4 with the repository FFmpeg binary, pass it
+through the production manifest builder and original terminal hook, then poll
+the signed status handler to `succeeded`. Arbitrary byte strings are not used
+as successful video fixtures.
+
+| Command | Exit | Result |
+|---|---:|---|
+| `pnpm exec vitest run src/integrations/bailu/__tests__` | 0 | 4 files / 39 tests, including held-handle probing, hardlink, junction/symlink, non-regular, swap/drift and invalid-video rejection plus the real-MP4 signed handler/status chain |
+| `pnpm exec tsc --noEmit` | 0 | TypeScript passed |
+| `pnpm exec eslint src/integrations/bailu` | 0 | 0 errors and 0 warnings |
+| `pnpm test` | 0 | 97/97 files; 1067/1067 tests |
+| `pnpm lint` | 0 | 0 errors; 21 unchanged upstream warnings |
+| `pnpm build` | 0 | Next.js/TypeScript passed; 45 static pages and three Bailu dynamic API routes; only the existing ingest NFT trace warning |
+| `git diff --check` | 0 | no whitespace errors |
+
+Manifest creation validates the same opened file before and after two hashes
+and streams that held handle into a real `ffprobe`: regular file, one link,
+nonzero stable size, stable
+device/inode/timestamps, ISO-BMFF `ftyp`, an actual video stream, positive
+duration, width and height. The fixed callback parser rejects raw leading or
+trailing whitespace and every literal `?` or `#`, including empty query or
+fragment forms, before constructing a URL.

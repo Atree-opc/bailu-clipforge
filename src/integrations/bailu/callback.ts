@@ -11,8 +11,12 @@ interface CallbackOptions {
   timeoutMs?: number;
 }
 
-function fixedCallbackUrl(value: string | undefined): URL | null {
+export function parseFixedCallbackUrl(value: string | undefined): URL | null {
   if (!value) return null;
+  // WHATWG URL normalizes leading/trailing spaces and represents a trailing bare
+  // ?/# as an empty search/hash. Reject the raw configuration before parsing so
+  // those variations cannot alias the reviewed callback identity.
+  if (value.trim() !== value || value.includes("?") || value.includes("#")) return null;
   try {
     const url = new URL(value);
     if (!(["http:", "https:"] as const).includes(url.protocol as "http:" | "https:")) return null;
@@ -33,7 +37,7 @@ export class BailuCallbackDelivery {
     private readonly ledger: BailuServiceLedger,
     private readonly options: CallbackOptions,
   ) {
-    this.url = fixedCallbackUrl(options.callbackUrl);
+    this.url = parseFixedCallbackUrl(options.callbackUrl);
     this.fetchImpl = options.fetchImpl ?? fetch;
     this.nowSeconds = options.nowSeconds ?? (() => Math.floor(Date.now() / 1000));
     this.timeoutMs = options.timeoutMs ?? 10_000;

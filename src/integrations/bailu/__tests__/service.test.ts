@@ -2,16 +2,32 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { createHash } from "crypto";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
+import {
+  closeSync,
+  copyFileSync,
+  linkSync,
+  mkdirSync,
+  mkdtempSync,
+  openSync,
+  readFileSync,
+  readSync,
+  renameSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+  writeSync,
+} from "fs";
 import { tmpdir } from "os";
 import { join, resolve } from "path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { verifySignedRequest, type BailuServiceCredentials } from "../auth";
-import { BailuCallbackDelivery } from "../callback";
+import { BailuCallbackDelivery, parseFixedCallbackUrl } from "../callback";
 import type { ComposeAdapter, CompositionLifecycleHooks, CompositionSnapshot } from "../compose-adapter";
-import { buildOutputManifest } from "../manifest";
+import { createOutputManifestBuilder, buildOutputManifest } from "../manifest";
 import { BailuServiceLedger } from "../ledger";
 import { BailuStudioService } from "../service";
+import { probeMedia } from "@/lib/media-probe";
+import { generateRealMp4 } from "./real-mp4";
 
 const roots: string[] = [];
 const credentials: BailuServiceCredentials = { keyId: "main-local", secret: "callback-test-secret" };
@@ -75,23 +91,104 @@ afterEach(() => {
 });
 
 describe("terminal output manifest", () => {
-  it("emits only output-root-relative POSIX paths with real bytes/hash/size", async () => {
+  it("accepts a real ISO-BMFF video and emits its exact bytes/hash/size", async () => {
     const root = mkdtempSync(join(tmpdir(), "bailu-manifest-"));
     roots.push(root);
     const projectDir = join(root, "project-1");
     mkdirSync(projectDir);
     const file = join(projectDir, "final.mp4");
-    writeFileSync(file, Buffer.from([0, 1, 2, 3]));
+    generateRealMp4(file);
+    const bytes = readFileSync(file);
     expect(await buildOutputManifest(root, "composition-1", file)).toEqual([
       {
         output_id: "composition-1",
         role: "final_video",
         relative_path: "project-1/final.mp4",
-        content_sha256: createHash("sha256").update(Buffer.from([0, 1, 2, 3])).digest("hex"),
-        size_bytes: 4,
+        content_sha256: createHash("sha256").update(bytes).digest("hex"),
+        size_bytes: bytes.length,
         mime_type: "video/mp4",
       },
     ]);
+  });
+
+  it("binds media verification to the already opened source handle", async () => {
+    const root = mkdtempSync(join(tmpdir(), "bailu-manifest-"));
+    roots.push(root);
+    const file = join(root, "handle-bound.mp4");
+    generateRealMp4(file);
+    let receivedHandle = false;
+    const builder = createOutputManifestBuilder({
+      probeMedia: async (source) => {
+        receivedHandle = typeof source.handle.fd === "number" && source.sizeBytes > 0;
+        return probeMedia(file);
+      },
+    });
+    await expect(builder(root, "composition-handle", file)).resolves.toHaveLength(1);
+    expect(receivedHandle).toBe(true);
+  });
+
+  it("rejects an ftyp-shaped fake with no real video stream", async () => {
+    const root = mkdtempSync(join(tmpdir(), "bailu-manifest-"));
+    roots.push(root);
+    const fake = join(root, "fake.mp4");
+    const bytes = Buffer.alloc(24);
+    bytes.writeUInt32BE(24, 0);
+    bytes.write("ftyp", 4, "ascii");
+    bytes.write("isom", 8, "ascii");
+    writeFileSync(fake, bytes);
+    await expect(buildOutputManifest(root, "composition-1", fake)).rejects.toThrow("studio_output_invalid");
+  });
+
+  it("rejects hardlinks, symlinks, and non-regular .mp4 paths", async () => {
+    const root = mkdtempSync(join(tmpdir(), "bailu-manifest-"));
+    const outside = mkdtempSync(join(tmpdir(), "bailu-outside-"));
+    roots.push(root, outside);
+    const source = join(outside, "source.mp4");
+    generateRealMp4(source);
+    const hardlink = join(root, "hardlink.mp4");
+    const symlink = join(root, "symlink.mp4");
+    const directory = join(root, "directory.mp4");
+    linkSync(source, hardlink);
+    // Windows permits a junction without developer-mode symlink privileges; lstat
+    // still reports it as a symbolic link, exercising the production rejection.
+    symlinkSync(outside, symlink, "junction");
+    mkdirSync(directory);
+    await expect(buildOutputManifest(root, "composition-1", hardlink)).rejects.toThrow("studio_output_invalid");
+    await expect(buildOutputManifest(root, "composition-1", symlink)).rejects.toThrow("studio_output_invalid");
+    await expect(buildOutputManifest(root, "composition-1", directory)).rejects.toThrow("studio_output_invalid");
+  });
+
+  it("rejects path swaps and same-inode byte drift during verification", async () => {
+    const root = mkdtempSync(join(tmpdir(), "bailu-manifest-"));
+    roots.push(root);
+    const swap = join(root, "swap.mp4");
+    const original = join(root, "swap-original.mp4");
+    generateRealMp4(swap);
+    const swapBuilder = createOutputManifestBuilder({
+      probeMedia: async () => {
+        renameSync(swap, original);
+        copyFileSync(original, swap);
+        return probeMedia(swap);
+      },
+    });
+    await expect(swapBuilder(root, "composition-swap", swap)).rejects.toThrow("studio_output_invalid");
+
+    const drift = join(root, "drift.mp4");
+    generateRealMp4(drift);
+    const driftBuilder = createOutputManifestBuilder({
+      probeMedia: async () => {
+        const media = await probeMedia(drift);
+        const descriptor = openSync(drift, "r+");
+        const byte = Buffer.alloc(1);
+        const offset = Math.max(16, readFileSync(drift).length - 1);
+        readSync(descriptor, byte, 0, 1, offset);
+        byte[0] ^= 0xff;
+        writeSync(descriptor, byte, 0, 1, offset);
+        closeSync(descriptor);
+        return media;
+      },
+    });
+    await expect(driftBuilder(root, "composition-drift", drift)).rejects.toThrow("studio_output_invalid");
   });
 
   it("rejects root escape, wrong media type, and empty files", async () => {
@@ -107,6 +204,25 @@ describe("terminal output manifest", () => {
     await expect(buildOutputManifest(root, "composition-1", escaped)).rejects.toThrow("studio_output_invalid");
     await expect(buildOutputManifest(root, "composition-1", wrongType)).rejects.toThrow("studio_output_invalid");
     await expect(buildOutputManifest(root, "composition-1", empty)).rejects.toThrow("studio_output_invalid");
+  });
+});
+
+describe("fixed callback URL", () => {
+  it.each([
+    " http://127.0.0.1/callback",
+    "http://127.0.0.1/callback ",
+    "http://127.0.0.1/callback?",
+    "http://127.0.0.1/callback?mode=terminal",
+    "http://127.0.0.1/callback#",
+    "http://127.0.0.1/callback#terminal",
+  ])("rejects raw URL variation %s", (value) => {
+    expect(parseFixedCallbackUrl(value)).toBeNull();
+  });
+
+  it("accepts one exact HTTP(S) URL without credentials/query/hash", () => {
+    expect(parseFixedCallbackUrl("http://127.0.0.1/api/studios/runs/callback")?.href).toBe(
+      "http://127.0.0.1/api/studios/runs/callback",
+    );
   });
 });
 
@@ -171,7 +287,7 @@ describe("signed service execution", () => {
     const projectDir = join(outputRoot, externalProjectId);
     mkdirSync(projectDir);
     const outputPath = join(projectDir, "final.mp4");
-    writeFileSync(outputPath, "real-video-bytes");
+    generateRealMp4(outputPath);
     await compose.hooks?.onTerminal("composition-1", "done", outputPath);
 
     const status = await service.getRun(accepted.external_task_id);
@@ -235,7 +351,7 @@ describe("signed service execution", () => {
     const projectDir = join(outputRoot, externalProjectId);
     mkdirSync(projectDir);
     const outputPath = join(projectDir, "final.mp4");
-    writeFileSync(outputPath, "restart-video");
+    generateRealMp4(outputPath);
     compose.snapshots.set("composition-1", { status: "done", outputPath });
 
     const restartedCompose = new FakeComposeAdapter();

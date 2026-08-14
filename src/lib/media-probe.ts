@@ -19,16 +19,7 @@ export interface MediaProbe {
   hasAudio: boolean;
 }
 
-/** Probe duration/dimensions/audio of a local media file via ffprobe (JSON output). */
-export async function probeMedia(filePath: string): Promise<MediaProbe> {
-  const { stdout } = await execFileAsync(ffprobeBin(), [
-    "-v", "error",
-    "-show_entries", "format=duration",
-    "-show_entries", "stream=codec_type,width,height",
-    "-of", "json",
-    filePath,
-  ], { maxBuffer: 4 * 1024 * 1024 });
-
+export function parseMediaProbeJson(stdout: string): MediaProbe {
   const parsed = JSON.parse(stdout) as {
     format?: { duration?: string };
     streams?: Array<{ codec_type?: string; width?: number; height?: number }>;
@@ -40,4 +31,17 @@ export async function probeMedia(filePath: string): Promise<MediaProbe> {
     height: video?.height ?? 0,
     hasAudio: !!parsed.streams?.some((s) => s.codec_type === "audio"),
   };
+}
+
+/** Probe duration/dimensions/audio of a local media file via ffprobe (JSON output). */
+export async function probeMedia(filePath: string): Promise<MediaProbe> {
+  const { stdout } = await execFileAsync(ffprobeBin(), [
+    "-v", "error",
+    "-show_entries", "format=duration",
+    "-show_entries", "stream=codec_type,width,height",
+    "-of", "json",
+    filePath,
+  ], { maxBuffer: 4 * 1024 * 1024 });
+
+  return parseMediaProbeJson(stdout);
 }
