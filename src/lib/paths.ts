@@ -10,7 +10,18 @@
  * preserving the original behavior exactly.
  */
 
-import { join } from "path";
+import { join, posix, win32 } from "path";
+
+/** Join an injected root using the separator semantics carried by that root. */
+function joinRuntimePath(root: string, child: string): string {
+  if (win32.isAbsolute(root) && !posix.isAbsolute(root)) {
+    return win32.join(root, child);
+  }
+  if (posix.isAbsolute(root)) {
+    return posix.join(root, child);
+  }
+  return join(root, child);
+}
 
 /** Writable data root directory (sqlite.db / uploads / output all live under here) */
 export function getDataDir(): string {
@@ -34,10 +45,10 @@ export function fileNameOf(p: string | null | undefined): string {
 
 /** Upload assets root directory: data/uploads */
 export function getUploadsDir(): string {
-  return join(getDataDir(), "uploads");
+  return joinRuntimePath(getDataDir(), "uploads");
 }
 
 /** Composition output root directory: data/output */
 export function getOutputDir(): string {
-  return join(getDataDir(), "output");
+  return joinRuntimePath(getDataDir(), "output");
 }

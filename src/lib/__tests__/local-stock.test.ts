@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { mkdtemp, writeFile, rm } from "fs/promises";
 import { tmpdir } from "os";
-import { join } from "path";
+import { join, win32 } from "path";
 import { classifyMaterial, scoreByFilename, scanLocalMaterials } from "@/lib/providers/local-stock";
 import { downloadStockFile } from "@/lib/providers/stock-types";
 import { searchStock } from "@/lib/providers/stock-registry";
@@ -70,5 +70,12 @@ describe("downloadStockFile 本地复制分支", () => {
     } finally {
       await rm(out, { recursive: true, force: true });
     }
+  });
+
+  it("跨平台识别 Windows 绝对路径，不把盘符路径交给 fetch", async () => {
+    const windowsPath = win32.join("C:\\", "media", "clip.mp4");
+    await expect(
+      downloadStockFile(windowsPath, dir, "copied_clip", "video"),
+    ).rejects.not.toThrow(/fetch failed|unknown scheme/i);
   });
 });

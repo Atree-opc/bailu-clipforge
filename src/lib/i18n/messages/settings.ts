@@ -138,7 +138,10 @@ export const settings: NamespaceMessages = {
     diagnosticsShow: "查看诊断信息",
     diagnosticsRefresh: "刷新",
     diagnosticsCopy: "复制",
-    diagnosticsHint: "反馈问题时，把这里的内容截图或复制到 GitHub issue，能大幅加快定位（不含任何密钥）。",
+    diagnosticsHint: "反馈问题时，请把这里的内容截图或复制给维护人员，便于快速定位（不含任何密钥）。",
+    licenseTitle: "开源许可",
+    licenseAttribution: "本工坊基于 ClipForge 修改，依据 AGPL-3.0-only 提供；白标不改变原项目版权与来源归属。",
+    licenseSource: "查看上游源码与许可",
     saveSettings: "保存设置",
 
     // 出镜人物
@@ -332,7 +335,10 @@ export const settings: NamespaceMessages = {
     diagnosticsShow: "Show diagnostics",
     diagnosticsRefresh: "Refresh",
     diagnosticsCopy: "Copy",
-    diagnosticsHint: "When reporting an issue, attach a screenshot or paste of this info to the GitHub issue — it speeds up debugging a lot (contains no secrets).",
+    diagnosticsHint: "When reporting an issue, attach this diagnostic output for the maintainer. It contains no secrets.",
+    licenseTitle: "Open-source license",
+    licenseAttribution: "This studio is modified from ClipForge and provided under AGPL-3.0-only. White-labeling does not alter upstream copyright or provenance.",
+    licenseSource: "View upstream source and license",
     saveSettings: "Save settings",
 
     // Characters

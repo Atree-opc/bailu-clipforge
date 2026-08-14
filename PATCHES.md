@@ -7,8 +7,10 @@ upstream conflict risk.
 | Bailu commit | Area | Files | Data-authority impact | Verification | Upstream conflict risk |
 |---|---|---|---|---|---|
 | Baseline commit (this branch) | Governance only | `UPSTREAM.md`, `BRANDING.md`, `PATCHES.md`, `SMOKE.md`, `LICENSES/README.md` | None | `SMOKE.md` plus repository/remote checks | Low |
+| PGE-007B white-label commit | Windows path baseline + presentation shell | `src/lib/{paths.ts,providers/stock-types.ts}`, focused tests, `src/components/app-shell.tsx`, `src/app/{layout.tsx,globals.css,start/page.tsx,settings/page.tsx}` and brand assets/i18n | None; ClipForge SQLite and main-platform authorities unchanged | 92 files / 1017 tests; lint 0 errors; Next build/TypeScript/45 pages; bilingual dark + light token browser probes | Medium (shell/start CSS and metadata assets) |
 
-There are no Bailu product-source patches at this baseline.
+No business route, database schema, composition, provider, or integration patch
+is included in PGE-007B.
 
 ## Rules for future entries
 

@@ -11,10 +11,14 @@ const geistSans = GeistSans;
 const geistMono = GeistMono;
 
 export const metadata: Metadata = {
-  // Title/description are bilingual (Chinese first): prioritize domestic traffic while covering overseas search indexing
-  title: "ClipForge — AI 短视频带货创作工具 | AI Short Video Creator",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3457"),
+  applicationName: "电商视频工坊",
+  title: {
+    default: "电商视频工坊 · 内部电商视频生产",
+    template: "%s · 电商视频工坊",
+  },
   description:
-    "一句话主题或一张商品图，一键产出抖音 / 快手 / 小红书 / TikTok 竖屏带货短视频：AI 写脚本、自动配画面、免费配音、烧字幕。Turn one sentence or a product photo into a vertical short video — AI script, free stock footage, voiceover & subtitles in one click.",
+    "面向内部生产的一体化电商视频工作台：商品、脚本、镜头、配音、字幕与合成集中处理。Internal commerce-video production for products, scripts, shots, voiceover, subtitles, and composition.",
   keywords: [
     "AI 短视频",
     "带货短视频",
@@ -34,7 +38,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Site-wide default dark studio theme: pin the dark class on <html>
+  // Keep the existing dark studio default; both light and dark Bailu token sets live in globals.css.
   return (
     <html
       lang="zh-CN"

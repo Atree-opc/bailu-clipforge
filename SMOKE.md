@@ -68,3 +68,22 @@ git status --short --branch
 Before promotion, also verify that local `HEAD`, the pushed Bailu branch, and
 the recorded commit agree; `origin/main` must remain the locked upstream
 commit, and `origin`/`upstream` must match `UPSTREAM.md`.
+
+## PGE-007B post-change verification
+
+Environment remains the Windows/Node/pnpm lock recorded above. Commands were
+rerun after the Windows fix and white-label shell:
+
+| Command | Exit | Result |
+|---|---:|---|
+| focused branding + path tests | 0 | 3 files / 21 tests |
+| `pnpm test` | 0 | 92/92 files; 1017/1017 tests |
+| `pnpm lint` | 0 | 0 errors; 21 unchanged upstream warnings |
+| `pnpm build` | 0 | Next.js/TypeScript passed; 45 static pages; only the existing NFT trace warning |
+| visible-brand scan | 0 | upstream name appears only in the explicit Settings license attribution |
+| `git diff --check` | 0 | no whitespace errors |
+
+Real Chromium at 1440×900 verified the Chinese and English dark shell. A CDP
+probe removed `.dark`, asserted computed light tokens `#f0f7f2`, `#1a3b26`,
+and `#2d7a4b`, and captured the light render. Generated screenshots live under
+ignored `.next/` and are verification evidence, not product source.

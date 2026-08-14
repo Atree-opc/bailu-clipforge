@@ -46,7 +46,7 @@ const NAV_SECTIONS: { labelKey: string; items: NavItem[] }[] = [
 ];
 
 // localStorage key for the collapsed-sidebar preference
-const NAV_COLLAPSED_KEY = "clipforge_nav_collapsed";
+const NAV_COLLAPSED_KEY = "bailu_commerce_studio_nav_collapsed";
 
 // Minimal inline icon set (16px stroke icons) so the sidebar has zero icon-lib deps
 function NavIcon({ name }: { name: string }) {
@@ -150,12 +150,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-background">
       {/* Desktop sidebar */}
-      <aside className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border/50 bg-background/60 transition-[width] md:flex ${collapsed ? "w-14" : "w-56"}`}>
-        <Link href="/start" className={`flex items-center gap-2.5 pb-4 pt-5 ${collapsed ? "justify-center px-0" : "px-4"}`}>
-          <img src="/icon.svg" alt="" width={30} height={30} className="rounded-[9px]" />
-          {!collapsed && <span className="text-base font-bold tracking-tight">ClipForge</span>}
+      <aside className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar/95 shadow-[1px_0_0_rgba(45,122,75,0.04)] transition-[width] md:flex ${collapsed ? "w-14" : "w-64"}`}>
+        <Link href="/start" className={`flex min-h-18 items-center gap-2.5 border-b border-sidebar-border/80 ${collapsed ? "justify-center px-0" : "px-4"}`}>
+          <img src="/icon.svg" alt={t("productName")} width={32} height={32} className="rounded-[9px] shadow-sm" />
+          {!collapsed && (
+            <span className="min-w-0">
+              <span className="block text-[14px] font-bold leading-tight tracking-tight text-sidebar-foreground">{t("productName")}</span>
+              <span className="mt-0.5 block truncate font-mono text-[9px] font-semibold tracking-[0.16em] text-primary">{t("internalLabel")}</span>
+            </span>
+          )}
         </Link>
         <nav className={`flex-1 space-y-5 overflow-y-auto py-2 ${collapsed ? "px-2" : "px-3"}`}>
           {sections.map((section) => (
@@ -218,10 +223,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Content column; mobile gets a slim top bar with a menu */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-50 flex h-12 items-center justify-between border-b border-border/50 bg-background/80 px-4 backdrop-blur-xl md:hidden">
+        <header className="sticky top-0 z-50 flex h-12 items-center justify-between border-b border-border bg-background/92 px-4 backdrop-blur-xl md:hidden">
           <Link href="/start" className="flex items-center gap-2">
-            <img src="/icon.svg" alt="" width={24} height={24} className="rounded-[7px]" />
-            <span className="text-sm font-bold tracking-tight">ClipForge</span>
+            <img src="/icon.svg" alt={t("productName")} width={24} height={24} className="rounded-[7px]" />
+            <span className="text-sm font-bold tracking-tight">{t("productName")}</span>
           </Link>
           <div className="flex items-center gap-1">
             <LanguageToggle />

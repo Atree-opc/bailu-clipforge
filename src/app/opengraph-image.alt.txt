@@ -1,1 +1,1 @@
-ClipForge — open-source AI e-commerce short-video generator: turn a product photo into a sales-driving video for TikTok Shop / Douyin / Kuaishou / Xiaohongshu. AI selling points, product-fidelity, auto voiceover & subtitles, no watermark.
+电商视频工坊 — 内部电商视频生产控制台，集中处理商品、脚本、镜头、配音、字幕与成片合成。

@@ -80,80 +80,79 @@
 
 /* ==================== 亮色主题 ==================== */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #6366f1;
-  --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #334155;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #eef2ff;
-  --accent-foreground: #3730a3;
-  --destructive: #ef4444;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #6366f1;
-  --chart-1: #6366f1;
-  --chart-2: #8b5cf6;
-  --chart-3: #06b6d4;
-  --chart-4: #f59e0b;
-  --chart-5: #10b981;
-  --radius: 0.75rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #6366f1;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eef2ff;
-  --sidebar-accent-foreground: #3730a3;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #6366f1;
-  --brand: #6366f1;
-  --brand-foreground: #ffffff;
-  --amber: #f59e0b;
+  --background: #f0f7f2;
+  --foreground: #1a3b26;
+  --card: #f8fcfa;
+  --card-foreground: #1a3b26;
+  --popover: #f8fcfa;
+  --popover-foreground: #1a3b26;
+  --primary: #2d7a4b;
+  --primary-foreground: #f7fff9;
+  --secondary: #e3eee7;
+  --secondary-foreground: #2c5138;
+  --muted: #e5eee8;
+  --muted-foreground: #607a68;
+  --accent: #f4e7df;
+  --accent-foreground: #743d2c;
+  --destructive: #b84235;
+  --border: #cdded2;
+  --input: #c4d7ca;
+  --ring: #2d7a4b;
+  --chart-1: #2d7a4b;
+  --chart-2: #c8613e;
+  --chart-3: #5d8f6c;
+  --chart-4: #b88732;
+  --chart-5: #47765a;
+  --radius: 0.625rem;
+  --sidebar: #f8fcfa;
+  --sidebar-foreground: #1a3b26;
+  --sidebar-primary: #2d7a4b;
+  --sidebar-primary-foreground: #f7fff9;
+  --sidebar-accent: #e3eee7;
+  --sidebar-accent-foreground: #234d31;
+  --sidebar-border: #cdded2;
+  --sidebar-ring: #2d7a4b;
+  --brand: #c8613e;
+  --brand-foreground: #fffaf7;
+  --amber: #b88732;
 }
 
-/* ==================== 暗色主题（暗色创作台·全站默认） ==================== */
-/* 近黑冷调底 + 单一电光青强调，气质偏 Linear/Runway 的「高级暗色」 */
+/* ==================== 暗色主题（内部生产控制台默认） ==================== */
 .dark {
-  --background: #0b0d12;
-  --foreground: #edeff4;
-  --card: #12151c;
-  --card-foreground: #edeff4;
-  --popover: #12151c;
-  --popover-foreground: #edeff4;
-  --primary: #8b5cf6;
-  --primary-foreground: #ffffff;
-  --secondary: #171b24;
-  --secondary-foreground: #c7cdd8;
-  --muted: #161a22;
-  --muted-foreground: #98a2b3;
-  --accent: #1b212b;
-  --accent-foreground: #edeff4;
-  --destructive: #f87171;
-  --border: #222834;
-  --input: #1a1f29;
-  --ring: #8b5cf6;
-  --chart-1: #8b5cf6;
-  --chart-2: #d946ef;
-  --chart-3: #a78bfa;
-  --chart-4: #fbbf24;
-  --chart-5: #34d399;
-  --sidebar: #0e1117;
-  --sidebar-foreground: #edeff4;
-  --sidebar-primary: #8b5cf6;
-  --sidebar-primary-foreground: #04221e;
-  --sidebar-accent: #1b212b;
-  --sidebar-accent-foreground: #edeff4;
-  --sidebar-border: #222834;
-  --sidebar-ring: #8b5cf6;
-  --brand: #8b5cf6;
-  --brand-foreground: #04221e;
-  --amber: #fbbf24;
+  --background: #0b1510;
+  --foreground: #e7f2e9;
+  --card: #111e17;
+  --card-foreground: #e7f2e9;
+  --popover: #111e17;
+  --popover-foreground: #e7f2e9;
+  --primary: #63c987;
+  --primary-foreground: #07130b;
+  --secondary: #17271d;
+  --secondary-foreground: #c5d8ca;
+  --muted: #16241b;
+  --muted-foreground: #91a99a;
+  --accent: #2b211b;
+  --accent-foreground: #f3d3c4;
+  --destructive: #ef7a6b;
+  --border: #263a2d;
+  --input: #1c2f23;
+  --ring: #63c987;
+  --chart-1: #63c987;
+  --chart-2: #e07b57;
+  --chart-3: #8ab99a;
+  --chart-4: #d6a857;
+  --chart-5: #a7d3b2;
+  --sidebar: #0e1913;
+  --sidebar-foreground: #e7f2e9;
+  --sidebar-primary: #63c987;
+  --sidebar-primary-foreground: #07130b;
+  --sidebar-accent: #1a2b20;
+  --sidebar-accent-foreground: #e7f2e9;
+  --sidebar-border: #263a2d;
+  --sidebar-ring: #63c987;
+  --brand: #e07b57;
+  --brand-foreground: #1b0e09;
+  --amber: #d6a857;
 }
 
 @layer base {
@@ -170,11 +169,11 @@
 
 /* ==================== 品牌渐变 ==================== */
 .brand-gradient {
-  background: linear-gradient(100deg, #6366f1, #8b5cf6 55%, #d946ef);
+  background: linear-gradient(105deg, #2d7a4b, #3f9360 58%, #c8613e);
 }
 
 .brand-gradient-text {
-  background: linear-gradient(100deg, #6366f1, #8b5cf6 55%, #d946ef);
+  background: linear-gradient(105deg, #2d7a4b, #3f9360 58%, #c8613e);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -182,9 +181,9 @@
 
 /* ==================== 卡片 ==================== */
 .glass-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
+  background: #f8fcfa;
+  border: 1px solid #cdded2;
+  border-radius: 0.625rem;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -197,31 +196,34 @@
 
 /* ==================== 页面背景 ==================== */
 .grid-bg {
-  background-color: #f8fafc;
+  background-color: #f0f7f2;
   background-image:
-    radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.03) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
+    linear-gradient(rgba(45, 122, 75, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 122, 75, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 85% 5%, rgba(200, 97, 62, 0.06), transparent 36%);
+  background-size: 32px 32px, 32px 32px, auto;
 }
 
 .dark .grid-bg {
-  background-color: #0b0d12;
-  /* brand purple glow (the teal glow predates the purple rebrand) */
+  background-color: #0b1510;
   background-image:
-    radial-gradient(circle at 50% -8%, rgba(139, 92, 246, 0.08) 0%, transparent 55%),
-    radial-gradient(circle at 85% 0%, rgba(217, 70, 239, 0.05) 0%, transparent 50%);
+    linear-gradient(rgba(99, 201, 135, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 201, 135, 0.025) 1px, transparent 1px),
+    radial-gradient(circle at 82% 0%, rgba(224, 123, 87, 0.08), transparent 38%);
+  background-size: 32px 32px, 32px 32px, auto;
 }
 
 /* ==================== 选中高亮 ==================== */
 .neon-glow {
   box-shadow:
-    0 0 0 2px rgba(99, 102, 241, 0.2),
-    0 4px 16px rgba(99, 102, 241, 0.08);
+    0 0 0 2px rgba(45, 122, 75, 0.2),
+    0 4px 16px rgba(45, 122, 75, 0.08);
 }
 
 .dark .neon-glow {
   box-shadow:
-    0 0 0 2px rgba(94, 234, 212, 0.35),
-    0 4px 20px rgba(94, 234, 212, 0.14);
+    0 0 0 2px rgba(99, 201, 135, 0.32),
+    0 4px 20px rgba(99, 201, 135, 0.12);
 }
 
 /* ==================== 卡片悬停 ==================== */
@@ -234,14 +236,14 @@
   box-shadow:
     0 4px 6px rgba(0, 0, 0, 0.04),
     0 10px 24px rgba(0, 0, 0, 0.06),
-    0 0 0 1px rgba(99, 102, 241, 0.1);
-  border-color: rgba(99, 102, 241, 0.3);
+    0 0 0 1px rgba(45, 122, 75, 0.1);
+  border-color: rgba(45, 122, 75, 0.3);
 }
 
 .dark .card-hover:hover {
   box-shadow:
     0 4px 6px rgba(0, 0, 0, 0.25),
     0 10px 24px rgba(0, 0, 0, 0.35),
-    0 0 0 1px rgba(94, 234, 212, 0.22);
-  border-color: rgba(94, 234, 212, 0.4);
+    0 0 0 1px rgba(99, 201, 135, 0.2);
+  border-color: rgba(99, 201, 135, 0.4);
 }

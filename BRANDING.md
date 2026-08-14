@@ -1,16 +1,15 @@
 # Bailu branding boundary
 
-Status: baseline only. No product branding was changed in this commit.
+Status: Bailu white-label shell implemented on `bailu/task7-clipforge-baseline`.
 
-The later white-label task may replace the application shell, theme tokens,
-product terminology, logo, icons, and user-facing upstream links. Those
-changes must stay concentrated in presentation and adapter seams so upstream
-upgrades remain reviewable.
+The application shell, default start-page palette, metadata, product
+terminology, logo, favicon, Apple icon, and social preview now identify the
+product as `电商视频工坊` / `Commerce Video Studio`. Changes remain
+concentrated in presentation seams so upstream upgrades stay reviewable.
 
 ## Required outcome for the later task
 
-- User-facing product name: Bailu commerce-video studio (final Chinese wording
-  is chosen by the product owner during white-label review).
+- User-facing product name: `电商视频工坊` / `Commerce Video Studio`.
 - Remove the upstream product name, old Chinese name, upstream logo, favicon,
   repository links, and author promotion from normal user-facing surfaces.
 - Retain upstream copyright, AGPL license text, notices, source attribution,
@@ -22,8 +21,10 @@ upgrades remain reviewable.
 - Do not add a second Auth, billing, provider registry, workflow-run,
   Artifact/Lineage, Campaign, or canonical storage authority.
 
-## Out of scope for this baseline
+## Preserved boundary
 
-- No source, asset, manifest, metadata, route, or database edits.
-- No iframe integration with the upstream UI.
+- No database schema, business API, composition, LLM provider, Auth, Billing,
+  Cloud, Bridge, callback, or canonical Artifact edits.
 - No main-platform Bridge, callback, deployment, or public release.
+- Upstream name and repository URL remain visible only in Settings → Open-source
+  license, `LICENSE`, `NOTICE`, `UPSTREAM.md`, and governance records.

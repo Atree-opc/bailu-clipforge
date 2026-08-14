@@ -27,6 +27,12 @@ describe("paths 运行时路径解析", () => {
     expect(getOutputDir()).toBe("/tmp/daihuo-userdata/output");
   });
 
+  it("注入 Windows 数据根时保留 Windows 分隔符语义", () => {
+    process.env.APP_DATA_DIR = "D:\\ClipForge\\userdata";
+    expect(getUploadsDir()).toBe("D:\\ClipForge\\userdata\\uploads");
+    expect(getOutputDir()).toBe("D:\\ClipForge\\userdata\\output");
+  });
+
   it("迁移目录可单独注入（只读资源与可写数据分离）", () => {
     delete process.env.APP_MIGRATIONS_DIR;
     expect(getMigrationsDir()).toBe(join(process.cwd(), "drizzle"));

@@ -1155,6 +1155,25 @@ export default function SettingsPage() {
             <p className="mt-2 text-xs text-muted-foreground">{t("diagnosticsHint")}</p>
           </div>
         </details>
+
+        {/* White-labeling keeps provenance in one deliberate, non-promotional surface. */}
+        <details className="group mt-3 rounded-lg border border-border/40">
+          <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground">
+            <span>{t("licenseTitle")}</span>
+            <svg className="size-4 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+          </summary>
+          <div className="space-y-2 px-4 pb-4 text-xs leading-relaxed text-muted-foreground">
+            <p>{t("licenseAttribution")}</p>
+            <a
+              href="https://github.com/xixihhhh/clipforge"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              {t("licenseSource")}
+            </a>
+          </div>
+        </details>
       </main>
     </div>
   );
