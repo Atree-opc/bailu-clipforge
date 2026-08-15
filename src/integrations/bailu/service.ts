@@ -11,7 +11,7 @@ import {
 } from "./contract";
 import type { ComposeAdapter } from "./compose-adapter";
 import type { BailuServiceLedger } from "./ledger";
-import { buildOutputManifest } from "./manifest";
+import { buildOutputManifest, openVerifiedOutputContent, type VerifiedOutputContent } from "./manifest";
 
 export class StudioServiceError extends Error {
   constructor(
@@ -125,6 +125,17 @@ export class BailuStudioService {
       return this.finalizeRun(run.externalTaskId, run.compositionId, snapshot.status, snapshot.outputPath ?? undefined);
     }
     return this.nonTerminalStatus(run.studioRunId, run.externalTaskId, "running");
+  }
+
+  async getRunOutputContent(externalTaskId: string, outputId: string): Promise<VerifiedOutputContent> {
+    const run = this.dependencies.ledger.getRunByExternalTaskId(externalTaskId);
+    if (!run) throw new StudioServiceError("studio_run_not_found", 404, "Studio run not found");
+    if (run.terminalPayload?.state !== "succeeded") {
+      throw new StudioServiceError("studio_output_not_ready", 409, "Studio output is not ready");
+    }
+    const output = run.terminalPayload.outputs.find((candidate) => candidate.output_id === outputId);
+    if (!output) throw new StudioServiceError("studio_output_not_found", 404, "Studio output not found");
+    return openVerifiedOutputContent(this.dependencies.outputRoot, output);
   }
 
   private nonTerminalStatus(

@@ -153,3 +153,27 @@ device/inode/timestamps, ISO-BMFF `ftyp`, an actual video stream, positive
 duration, width and height. The fixed callback parser rejects raw leading or
 trailing whitespace and every literal `?` or `#`, including empty query or
 fragment forms, before constructing a URL.
+
+## PGE-007C4A signed output content
+
+The additive content route is ID-only and streams the already-manifested MP4
+from the same handle used for request-time root, identity, hash, size, MIME,
+`ftyp` and real-video verification. No Drizzle migration, ledger field,
+ordinary `/api/output` behavior or compose behavior changed.
+
+| Command | Exit | Result |
+|---|---:|---|
+| first red `pnpm exec vitest run src/integrations/bailu/__tests__/content-route.test.ts` | 1 | 1 file / 7 tests red: missing handler/opener and the prior large-pipe media probe gap |
+| `pnpm exec vitest run src/integrations/bailu/__tests__` | 0 | 5 files / 47 tests: signature/time/replay, state/output selection, locator/Range rejection, link/non-file/drift/fake rejection, exact >1 MiB H.264 bytes and cancellation close |
+| `pnpm exec tsc --noEmit` | 0 | TypeScript passed |
+| focused eslint over Bailu and the new route | 0 | 0 errors and 0 warnings |
+| `pnpm test` | 0 | 98/98 files; 1075/1075 tests |
+| `pnpm lint` | 0 | 0 errors; 21 unchanged upstream warnings |
+| `pnpm build` | 0 | Next.js/TypeScript passed; 45 static pages and four Bailu dynamic API routes; only the existing ingest NFT trace warning |
+| real production HTTP signed stream | 0 | status 200; 1,286,435 exact H.264 bytes; exact length/hash/MIME/no-store/nosniff; no Location; run ledger row unchanged; one verified nonce row |
+| main-platform `npm run typecheck` / `npm run build` | 0 | canonical additive contract passed server/web/test typecheck and 3,947-module build |
+
+The real HTTP smoke used a temporary `APP_DATA_DIR`, the production standalone
+Next server and a signed empty-body GET. It compared the response byte for byte
+with the generated H.264 source and confirmed the content request did not
+rewrite the terminal service request row.

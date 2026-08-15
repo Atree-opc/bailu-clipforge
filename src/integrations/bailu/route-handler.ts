@@ -1,12 +1,15 @@
 import { BailuAuthError, verifySignedRequest } from "./auth";
 import {
+  STUDIO_OUTPUT_CONTENT_HEADERS,
   STUDIO_CONTRACT_VERSION,
+  studioOutputContentPath,
   StudioContractError,
   parseCreateProjectRequest,
   parseRunRequest,
   type ServiceErrorResponse,
 } from "./contract";
 import { BailuLedgerError } from "./ledger";
+import { BailuOutputError } from "./manifest";
 import { BailuRuntimeConfigError, type BailuServiceRuntime } from "./runtime";
 import { StudioServiceError } from "./service";
 
@@ -36,6 +39,10 @@ function summaryFor(code: string): string {
     studio_binding_conflict: "Studio execution binding conflicts with an earlier request",
     studio_project_not_found: "Studio project not found",
     studio_run_not_found: "Studio run not found",
+    studio_output_not_found: "Studio output not found",
+    studio_output_not_ready: "Studio output is not ready",
+    studio_output_invalid: "Studio output is invalid",
+    studio_range_not_supported: "Studio output ranges are not supported",
     studio_service_not_configured: "Studio service identity is not configured",
   };
   return summaries[code] ?? "Studio service request failed";
@@ -54,6 +61,10 @@ export function studioRouteErrorResponse(error: unknown): Response {
     summary = summaryFor(code);
   } else if (error instanceof StudioServiceError) {
     ({ code, status, summary } = error);
+  } else if (error instanceof BailuOutputError) {
+    code = error.code;
+    status = 422;
+    summary = summaryFor(code);
   } else if (error instanceof BailuRuntimeConfigError) {
     code = error.code;
     status = 503;
@@ -115,6 +126,42 @@ export async function handleGetRun(
     if (!EXTERNAL_ID.test(externalTaskId)) throw new StudioContractError();
     await verified(request, runtime);
     return response(await runtime.service.getRun(externalTaskId));
+  } catch (error) {
+    return studioRouteErrorResponse(error);
+  }
+}
+
+export async function handleGetRunOutputContent(
+  request: Request,
+  externalTaskId: string,
+  outputId: string,
+  runtime: BailuServiceRuntime,
+): Promise<Response> {
+  try {
+    const expectedPath = studioOutputContentPath(externalTaskId, outputId);
+    const requestUrl = new URL(request.url);
+    if (request.method !== "GET" || requestUrl.pathname !== expectedPath) throw new StudioContractError();
+    await verified(request, runtime);
+    if (requestUrl.search) throw new StudioContractError();
+    if (request.headers.has("range")) {
+      throw new StudioServiceError("studio_range_not_supported", 400, summaryFor("studio_range_not_supported"));
+    }
+    const opened = await runtime.service.getRunOutputContent(externalTaskId, outputId);
+    try {
+      return new Response(opened.createReadableStream(), {
+        status: 200,
+        headers: {
+          [STUDIO_OUTPUT_CONTENT_HEADERS.contentType]: opened.manifest.mime_type,
+          [STUDIO_OUTPUT_CONTENT_HEADERS.contentLength]: String(opened.manifest.size_bytes),
+          [STUDIO_OUTPUT_CONTENT_HEADERS.contentSha256]: opened.manifest.content_sha256,
+          [STUDIO_OUTPUT_CONTENT_HEADERS.cacheControl]: "no-store",
+          [STUDIO_OUTPUT_CONTENT_HEADERS.contentTypeOptions]: "nosniff",
+        },
+      });
+    } catch (error) {
+      await opened.close();
+      throw error;
+    }
   } catch (error) {
     return studioRouteErrorResponse(error);
   }

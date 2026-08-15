@@ -1,8 +1,12 @@
 import { createHash } from "crypto";
 import { describe, expect, it } from "vitest";
 import {
+  STUDIO_OUTPUT_CONTENT_HEADERS,
+  STUDIO_OUTPUT_CONTENT_MEDIA_TYPE,
+  STUDIO_OUTPUT_CONTENT_PATH_TEMPLATE,
   parseCreateProjectRequest,
   parseRunRequest,
+  studioOutputContentPath,
   type CreateProjectRequest,
   type RunRequest,
 } from "../contract";
@@ -72,6 +76,24 @@ async function signedRequest(
 }
 
 describe("bailu.studio/1.0 mirror parsers", () => {
+  it("locks the additive ID-only output content transfer contract", () => {
+    expect(STUDIO_OUTPUT_CONTENT_PATH_TEMPLATE).toBe(
+      "/api/bailu/v1/runs/:externalTaskId/outputs/:outputId/content",
+    );
+    expect(studioOutputContentPath("task-1", "output-1")).toBe(
+      "/api/bailu/v1/runs/task-1/outputs/output-1/content",
+    );
+    expect(() => studioOutputContentPath("task-1", "../final.mp4")).toThrow("studio_request_invalid");
+    expect(STUDIO_OUTPUT_CONTENT_MEDIA_TYPE).toBe("video/mp4");
+    expect(STUDIO_OUTPUT_CONTENT_HEADERS).toEqual({
+      contentType: "content-type",
+      contentLength: "content-length",
+      contentSha256: "x-bailu-content-sha256",
+      cacheControl: "cache-control",
+      contentTypeOptions: "x-content-type-options",
+    });
+  });
+
   it("accepts the exact create shape and rejects unknown business scope", () => {
     const expected: CreateProjectRequest = {
       contract_version: "bailu.studio/1.0",

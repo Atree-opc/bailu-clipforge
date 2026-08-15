@@ -1,7 +1,7 @@
 /**
  * Runtime mirror for the minimum ClipForge-facing surface of the main contract.
  * Source of authority: 多自媒体平台管理中心/src/shared/contracts-studio.ts
- * Locked source SHA-256: 4f27f79e847009411e322420c0f285ae453f925bb22e7db3177c30584ed211d7
+ * Locked source SHA-256: 5b49fbdca56a56cdc790bf41841878268d8702270c3110b790a67411726f74ce
  *
  * This file is a strict wire parser/serializer only. It must not grow into a
  * second independently evolving business contract.
@@ -9,6 +9,16 @@
 
 export const STUDIO_CONTRACT_VERSION = "bailu.studio/1.0" as const;
 export const STUDIO_KIND = "clipforge" as const;
+export const STUDIO_OUTPUT_CONTENT_PATH_TEMPLATE =
+  "/api/bailu/v1/runs/:externalTaskId/outputs/:outputId/content" as const;
+export const STUDIO_OUTPUT_CONTENT_MEDIA_TYPE = "video/mp4" as const;
+export const STUDIO_OUTPUT_CONTENT_HEADERS = {
+  contentType: "content-type",
+  contentLength: "content-length",
+  contentSha256: "x-bailu-content-sha256",
+  cacheControl: "cache-control",
+  contentTypeOptions: "x-content-type-options",
+} as const;
 
 const TOKEN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/u;
 const SHA256 = /^[0-9a-f]{64}$/u;
@@ -67,6 +77,14 @@ export interface StudioOutputManifestItem {
   mime_type: string;
 }
 
+export interface StudioOutputContentDescriptor {
+  external_task_id: string;
+  output_id: string;
+  content_sha256: string;
+  size_bytes: number;
+  mime_type: typeof STUDIO_OUTPUT_CONTENT_MEDIA_TYPE;
+}
+
 export interface RunStatusResponse {
   contract_version: typeof STUDIO_CONTRACT_VERSION;
   studio_run_id: string;
@@ -107,6 +125,11 @@ export class StudioContractError extends Error {
     super("studio_request_invalid");
     this.name = "StudioContractError";
   }
+}
+
+export function studioOutputContentPath(externalTaskId: string, outputId: string): string {
+  if (!TOKEN.test(externalTaskId) || !TOKEN.test(outputId)) invalid();
+  return `/api/bailu/v1/runs/${externalTaskId}/outputs/${outputId}/content`;
 }
 
 function invalid(): never {

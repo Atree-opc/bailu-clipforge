@@ -5,7 +5,7 @@ the main platform's `bailu.studio/1.0` contract. The authority file is:
 
 ```text
 多自媒体平台管理中心/src/shared/contracts-studio.ts
-SHA-256 4f27f79e847009411e322420c0f285ae453f925bb22e7db3177c30584ed211d7
+SHA-256 5b49fbdca56a56cdc790bf41841878268d8702270c3110b790a67411726f74ce
 ```
 
 The mirror is deliberately strict and cannot evolve independently. ClipForge
@@ -84,6 +84,7 @@ Routes:
 POST /api/bailu/v1/projects
 POST /api/bailu/v1/projects/:externalProjectId/runs
 GET  /api/bailu/v1/runs/:externalTaskId
+GET  /api/bailu/v1/runs/:externalTaskId/outputs/:outputId/content
 ```
 
 The terminal status/callback body is exact:
@@ -100,6 +101,30 @@ hashing, requires link count one and a nonzero stable size, verifies the
 ISO-BMFF `ftyp` box, and streams that same held handle into the repository
 `ffprobe` to require a real positive-duration video stream with positive dimensions. Links, identity
 swaps and content/metadata drift are rejected.
+
+## Output content transfer
+
+The content route accepts IDs only and never accepts `relative_path`, a URL,
+or an absolute file path from the caller. It is available only when the
+ledger has a terminal `succeeded` payload containing the exact `output_id`.
+Every request uses a fresh signed `GET` with an empty body, timestamp window,
+nonce replay claim and idempotency key.
+
+Before returning bytes, the service reruns the output-root, regular-file,
+single-link, stable identity, manifest hash/size/MIME, ISO-BMFF and real-video
+checks. The response stream reads from that same opened `FileHandle`, checks
+the streamed hash and identity again at EOF, and closes the handle on normal
+completion, error or client cancellation. It is not a browser download or
+general file server: Range, query locators, redirects and caching are not
+supported. A successful response has exactly the reviewed transfer metadata:
+
+```text
+Content-Type: video/mp4
+Content-Length: <manifest size_bytes>
+X-Bailu-Content-SHA256: <manifest content_sha256>
+Cache-Control: no-store
+X-Content-Type-Options: nosniff
+```
 
 ## Recovery
 
