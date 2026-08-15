@@ -177,3 +177,30 @@ The real HTTP smoke used a temporary `APP_DATA_DIR`, the production standalone
 Next server and a signed empty-body GET. It compared the response byte for byte
 with the generated H.264 source and confirmed the content request did not
 rewrite the terminal service request row.
+
+## PGE-007C4A-FIX request-envelope repair
+
+The content route now applies a stateless request-envelope gate before HMAC
+verification or nonce claim: exact GET path, no non-empty query, no Range or
+`Transfer-Encoding`, and `Content-Length` either absent or the canonical value
+`0`. After verification it also asserts the signed raw body is empty before
+claiming the nonce. Rejected envelopes leave both nonce and terminal ledgers
+unchanged.
+
+| Command | Exit | Result |
+|---|---:|---|
+| first red focused content-route test | 1 | 8 tests / 2 failures: bare query transport and nonzero/ambiguous body transports reached the old handler |
+| `pnpm exec vitest run src/integrations/bailu/__tests__` | 0 | 5 files / 49 tests |
+| `pnpm test -- --run` | 0 | 98/98 files; 1077/1077 tests |
+| `pnpm exec tsc --noEmit` | 0 | TypeScript passed |
+| `pnpm lint` | 0 | 0 errors; 21 unchanged upstream warnings |
+| `pnpm build` | 0 | Next.js/TypeScript passed; 45 static pages and four Bailu dynamic API routes; only the existing ingest NFT trace warning |
+| real production raw TCP | 0 | nonzero Content-Length body, chunked body, non-empty query and Range all 400 with nonce delta 0; wrong/expired signatures 401; legal missing-length and canonical-zero requests each streamed the exact 1,286,435 bytes; replay 409; terminal ledger unchanged |
+
+Next 16 normalizes an original request target ending in a bare `?` before the
+App Route handler: production `request.url`, `nextUrl`, headers and request
+internals are identical to a request without the delimiter. The Planner accepts
+those two forms as semantically equivalent and explicitly forbids a custom
+server or proxy solely to retain the delimiter. A focused test constructs both
+through `NextRequest` and asserts identical status, headers, exact bytes and
+ledger behavior; any non-empty query remains rejected before nonce claim.

@@ -15,6 +15,7 @@ import {
 } from "fs";
 import { tmpdir } from "os";
 import { basename, join, relative, resolve, sep } from "path";
+import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it } from "vitest";
 import { BAILU_AUTH_HEADERS, signBailuRequest, type BailuServiceCredentials } from "../auth";
 import { BailuCallbackDelivery } from "../callback";
@@ -82,18 +83,20 @@ function signedContentRequest(input: {
   timestamp?: number;
   secret?: string;
   urlSuffix?: string;
+  rawUrlSuffix?: string;
+  simulatedRawBody?: string;
   headers?: Record<string, string>;
 }): Request {
   const pathname = contentPath(input.externalTaskId, input.outputId);
   const timestamp = input.timestamp ?? Math.floor(Date.now() / 1000);
   const nonce = input.nonce ?? nextNonce();
   const idempotencyKey = input.idempotencyKey ?? `content-${input.externalTaskId}-${input.outputId}-${nonceCounter}`;
-  const bodySha256 = createHash("sha256").update("").digest("hex");
+  const bodySha256 = createHash("sha256").update(input.simulatedRawBody ?? "").digest("hex");
   const signature = signBailuRequest(
     { method: "GET", pathname, timestamp, nonce, idempotencyKey, bodySha256 },
     { keyId: credentials.keyId, secret: input.secret ?? credentials.secret },
   );
-  return new Request(`http://127.0.0.1${pathname}${input.urlSuffix ?? ""}`, {
+  const request = new Request(`http://127.0.0.1${pathname}${input.urlSuffix ?? ""}`, {
     headers: {
       [BAILU_AUTH_HEADERS.keyId]: credentials.keyId,
       [BAILU_AUTH_HEADERS.timestamp]: String(timestamp),
@@ -104,6 +107,13 @@ function signedContentRequest(input: {
       ...input.headers,
     },
   });
+  if (input.rawUrlSuffix !== undefined) {
+    Object.defineProperty(request, "url", { value: `http://127.0.0.1${pathname}${input.rawUrlSuffix}` });
+  }
+  if (input.simulatedRawBody !== undefined) {
+    Object.defineProperty(request, "text", { value: async () => input.simulatedRawBody });
+  }
+  return request;
 }
 
 function seedRun(context: TestContext, suffix: string): { externalProjectId: string; externalTaskId: string; studioRunId: string } {
@@ -236,7 +246,8 @@ describe("signed Bailu output content", () => {
       output.output_id,
       context.runtime,
     );
-    expect(missingWithRange.status).toBe(401);
+    expect(missingWithRange.status).toBe(400);
+    expect(await missingWithRange.json()).toMatchObject({ error_code: "studio_range_not_supported" });
     expect(context.sqlite.prepare("SELECT count(*) AS count FROM bailu_service_nonces").get()).toMatchObject({ count: 0 });
 
     const wrong = await requestContent(context, run.externalTaskId, output.output_id, { secret: "wrong-secret" });
@@ -294,10 +305,15 @@ describe("signed Bailu output content", () => {
     const output = manifestFor(context.outputRoot, file, "surface-output");
     markSucceeded(context, run, [output]);
 
+    const terminalBefore = context.sqlite
+      .prepare("SELECT * FROM bailu_service_requests WHERE external_task_id = ?")
+      .get(run.externalTaskId);
     const query = await requestContent(context, run.externalTaskId, output.output_id, {
       urlSuffix: `?relative_path=${encodeURIComponent(output.relative_path)}`,
     });
     expect(query.status).toBe(400);
+    const fragment = await requestContent(context, run.externalTaskId, output.output_id, { rawUrlSuffix: "#fragment" });
+    expect(fragment.status).toBe(400);
     const range = await requestContent(context, run.externalTaskId, output.output_id, { headers: { range: "bytes=0-9" } });
     expect(range.status).toBe(400);
     expect(await range.json()).toMatchObject({ error_code: "studio_range_not_supported" });
@@ -308,11 +324,93 @@ describe("signed Bailu output content", () => {
       context.runtime,
     );
     expect(traversal.status).toBe(400);
-    for (const response of [query, traversal]) {
+    for (const response of [query, fragment, traversal]) {
       expect(response.headers.get("location")).toBeNull();
       expect(await response.clone().text()).not.toContain(context.outputRoot);
       expect(await response.text()).not.toContain(credentials.secret);
     }
+    expect(context.sqlite.prepare("SELECT count(*) AS count FROM bailu_service_nonces").get()).toMatchObject({ count: 0 });
+    expect(context.sqlite.prepare("SELECT * FROM bailu_service_requests WHERE external_task_id = ?").get(run.externalTaskId)).toEqual(
+      terminalBefore,
+    );
+    context.sqlite.close();
+  });
+
+  it("treats a bare query delimiter exactly like no query after WHATWG URL normalization", async () => {
+    const context = setup();
+    const run = seedRun(context, "empty-query-equivalence");
+    const file = join(context.outputRoot, "empty-query-equivalence.mp4");
+    generateRealMp4(file);
+    const output = manifestFor(context.outputRoot, file, "empty-query-equivalence-output");
+    markSucceeded(context, run, [output]);
+    const terminalBefore = context.sqlite
+      .prepare("SELECT * FROM bailu_service_requests WHERE external_task_id = ?")
+      .get(run.externalTaskId);
+
+    const noQueryRawRequest = signedContentRequest({ externalTaskId: run.externalTaskId, outputId: output.output_id });
+    const emptyQueryRawRequest = signedContentRequest({
+      externalTaskId: run.externalTaskId,
+      outputId: output.output_id,
+      urlSuffix: "?",
+    });
+    expect(emptyQueryRawRequest.url).toBe(`${noQueryRawRequest.url}?`);
+    const noQueryRequest = new NextRequest(noQueryRawRequest.url, { headers: noQueryRawRequest.headers });
+    const emptyQueryRequest = new NextRequest(emptyQueryRawRequest.url, { headers: emptyQueryRawRequest.headers });
+    expect(emptyQueryRequest.url).toBe(noQueryRequest.url);
+
+    const noQuery = await handleGetRunOutputContent(noQueryRequest, run.externalTaskId, output.output_id, context.runtime);
+    const emptyQuery = await handleGetRunOutputContent(emptyQueryRequest, run.externalTaskId, output.output_id, context.runtime);
+    expect(emptyQuery.status).toBe(noQuery.status);
+    expect(Object.fromEntries(emptyQuery.headers.entries())).toEqual(Object.fromEntries(noQuery.headers.entries()));
+    expect(new Uint8Array(await emptyQuery.arrayBuffer())).toEqual(new Uint8Array(await noQuery.arrayBuffer()));
+    expect(context.sqlite.prepare("SELECT count(*) AS count FROM bailu_service_nonces").get()).toMatchObject({ count: 2 });
+    expect(context.sqlite.prepare("SELECT * FROM bailu_service_requests WHERE external_task_id = ?").get(run.externalTaskId)).toEqual(
+      terminalBefore,
+    );
+    context.sqlite.close();
+  });
+
+  it("rejects body transport ambiguity and post-verification non-empty raw bodies before claiming a nonce", async () => {
+    const context = setup();
+    const run = seedRun(context, "transport");
+    const file = join(context.outputRoot, "transport.mp4");
+    generateRealMp4(file);
+    const output = manifestFor(context.outputRoot, file, "transport-output");
+    markSucceeded(context, run, [output]);
+    const terminalBefore = context.sqlite
+      .prepare("SELECT * FROM bailu_service_requests WHERE external_task_id = ?")
+      .get(run.externalTaskId);
+
+    const transportHeaders: Array<Record<string, string>> = [
+      { "content-length": "1" },
+      { "content-length": "00" },
+      { "content-length": "+0" },
+      { "transfer-encoding": "chunked" },
+      { "transfer-encoding": "identity", "content-length": "0" },
+    ];
+    for (const headers of transportHeaders) {
+      const rejected = await requestContent(context, run.externalTaskId, output.output_id, { headers });
+      expect(rejected.status).toBe(400);
+      expect(await rejected.json()).toMatchObject({ error_code: "studio_request_invalid" });
+    }
+
+    const signedNonEmpty = await requestContent(context, run.externalTaskId, output.output_id, {
+      headers: { "content-length": "0" },
+      simulatedRawBody: "hidden-body",
+    });
+    expect(signedNonEmpty.status).toBe(400);
+    expect(await signedNonEmpty.json()).toMatchObject({ error_code: "studio_request_invalid" });
+    expect(context.sqlite.prepare("SELECT count(*) AS count FROM bailu_service_nonces").get()).toMatchObject({ count: 0 });
+    expect(context.sqlite.prepare("SELECT * FROM bailu_service_requests WHERE external_task_id = ?").get(run.externalTaskId)).toEqual(
+      terminalBefore,
+    );
+
+    const validZero = await requestContent(context, run.externalTaskId, output.output_id, {
+      headers: { "content-length": "0" },
+    });
+    expect(validZero.status).toBe(200);
+    await validZero.body?.cancel();
+    expect(context.sqlite.prepare("SELECT count(*) AS count FROM bailu_service_nonces").get()).toMatchObject({ count: 1 });
     context.sqlite.close();
   });
 

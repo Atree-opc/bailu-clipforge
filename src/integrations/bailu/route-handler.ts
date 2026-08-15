@@ -139,13 +139,28 @@ export async function handleGetRunOutputContent(
 ): Promise<Response> {
   try {
     const expectedPath = studioOutputContentPath(externalTaskId, outputId);
-    const requestUrl = new URL(request.url);
-    if (request.method !== "GET" || requestUrl.pathname !== expectedPath) throw new StudioContractError();
-    await verified(request, runtime);
-    if (requestUrl.search) throw new StudioContractError();
+    const rawUrl = request.url;
+    const schemeEnd = rawUrl.indexOf("://");
+    const rawPathStart = schemeEnd >= 0 ? rawUrl.indexOf("/", schemeEnd + 3) : -1;
+    const rawPath = rawPathStart >= 0 ? rawUrl.slice(rawPathStart) : "";
+    if (
+      request.method !== "GET" ||
+      rawUrl.includes("?") ||
+      rawUrl.includes("#") ||
+      rawPath !== expectedPath
+    ) {
+      throw new StudioContractError();
+    }
     if (request.headers.has("range")) {
       throw new StudioServiceError("studio_range_not_supported", 400, summaryFor("studio_range_not_supported"));
     }
+    const contentLength = request.headers.get("content-length");
+    if (request.headers.has("transfer-encoding") || (contentLength !== null && contentLength !== "0")) {
+      throw new StudioContractError();
+    }
+    const signed = await verifySignedRequest(request, runtime.credentials);
+    if (signed.rawBody !== "") throw new StudioContractError();
+    runtime.service.claimVerifiedNonce(signed);
     const opened = await runtime.service.getRunOutputContent(externalTaskId, outputId);
     try {
       return new Response(opened.createReadableStream(), {
